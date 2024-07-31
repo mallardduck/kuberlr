@@ -252,3 +252,14 @@ func TestFindCompatibleKubectlNoMatchFound(t *testing.T) {
 		t.Errorf("Expected error not found")
 	}
 }
+
+func TestFindCompatibleKubectlForK3s(t *testing.T) {
+	localVersions := []string{}
+	systemVersions := []string{"1.27.13", "1.28.9", "1.29.4", "1.30.0"}
+	expectedVersion := "1.30.0"
+
+	err := findCompatibleKubectlTester("1.29.3+k3s1", localVersions, systemVersions, expectedVersion)
+	if err != nil {
+		t.Error(err)
+	}
+}
