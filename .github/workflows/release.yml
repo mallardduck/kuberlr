@@ -1,4 +1,4 @@
-name: goreleaser
+name: Release Tag (goreleaser and container image)
 
 on:
   push:
@@ -32,3 +32,19 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: goreleaser-dist
+          path: dist/
+  docker-image:
+    needs:
+      - goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: goreleaser-dist
+      - name: Display structure of downloaded files
+        run: ls -R
