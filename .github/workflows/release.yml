@@ -72,7 +72,7 @@ jobs:
         with:
           context: .
           file: package/Dockerfile
-          platforms: "linux/amd64,linux/arm64,linux/s390x"
+          platforms: "linux/amd64,linux/arm64"
           push: true
           tags: ${{ env.IMAGE_REPO }}:${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
