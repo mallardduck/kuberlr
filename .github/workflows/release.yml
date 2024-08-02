@@ -42,7 +42,9 @@ jobs:
       - goreleaser
     runs-on: ubuntu-latest
     env:
-      IMAGE_REPO: ${{ github.repository }}
+      REGISTRY: ${{ vars.registry || 'docker.io' }}
+      IMAGE_REPO_USER: ${{ vars.DOCKER_USERNAME || github.repository_owner }}
+      IMAGE_REPO: ${{ vars.image_repo || github.repository }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,6 +59,10 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Log in to the Container registry
         uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.IMAGE_REPO_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
