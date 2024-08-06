@@ -1,9 +1,30 @@
-ARG BCI_VERSION=15.6
+# If desired this can be set to specific tag by passing an arg
+ARG BCI_VERSION=latest
 FROM registry.suse.com/bci/bci-busybox:${BCI_VERSION} AS final
-FROM registry.suse.com/bci/bci-base:${BCI_VERSION} AS build
 
-ARG TARGETARCH
-ENV TARGETARCH=$TARGETARCH
+# Image that provides cross compilation tooling.
+FROM --platform=$BUILDPLATFORM rancher/mirrored-tonistiigi-xx:1.3.0 AS xx
+
+FROM --platform=$BUILDPLATFORM registry.suse.com/bci/golang:1.22 AS build
+
+ARG PROJECT_PATH
+ARG VERSION
+ARG BUILD_DATE
+ARG TAG
+
+COPY --from=xx / /
+
+WORKDIR /app
+COPY . .
+
+ENV CGO_ENABLED=0
+RUN xx-go --wrap && mkdir -p /run/lock
+RUN xx-go mod download && \
+    xx-go build -ldflags "-X=${PROJECT_PATH}/pkg/kuberlr.Version=${VERSION} \
+        -X=${PROJECT_PATH}/pkg/kuberlr.BuildDate=${BUILD_DATE:-$(date +%Y%m%d)} \
+        -X=${PROJECT_PATH}/pkg/kuberlr.Tag=${TAG}" \
+        -o ./bin/kuberlr ./cmd/kuberlr
+RUN xx-verify --static ./bin/kuberlr
 
 RUN mkdir /chroot
 COPY --from=final / /chroot/
@@ -17,13 +38,8 @@ RUN zypper --non-interactive refresh && \
     zypper --installroot /chroot clean -a && \
     rm -rf /chroot/var/cache/zypp/* /chroot/var/log/zypp/* /chroot/etc/zypp/
 
-COPY ./dist /work-tmp
-WORKDIR /work-tmp
-RUN set -x \
-    && if [ $TARGETARCH = "amd64" ]; then TARGETARCH="${TARGETARCH}_v1"; fi \
-    && KUBERLR_PATH=kuberlr_linux_${TARGETARCH}/kuberlr \
-    && mv $KUBERLR_PATH /chroot/bin/kuberlr \
-    && cd /chroot/bin && ln -s ./kuberlr ./kubectl
+RUN cp ./bin/kuberlr /chroot/bin/kuberlr && \
+    cd /chroot/bin && ln -s ./kuberlr ./kubectl
 
 RUN useradd -u 1000 -U -m kuberlr \
     && cp /etc/passwd /chroot/etc/passwd \
