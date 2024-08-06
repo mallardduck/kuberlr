@@ -26,6 +26,8 @@ RUN xx-go mod download && \
         -o ./bin/kuberlr ./cmd/kuberlr
 RUN xx-verify --static ./bin/kuberlr
 
+FROM registry.suse.com/bci/bci-base:${BCI_VERSION} AS zypper
+
 RUN mkdir /chroot
 COPY --from=final / /chroot/
 
@@ -38,8 +40,8 @@ RUN zypper --non-interactive refresh && \
     zypper --installroot /chroot clean -a && \
     rm -rf /chroot/var/cache/zypp/* /chroot/var/log/zypp/* /chroot/etc/zypp/
 
-RUN cp ./bin/kuberlr /chroot/bin/kuberlr && \
-    cd /chroot/bin && ln -s ./kuberlr ./kubectl
+COPY --from=build /app/bin/kuberlr /chroot/bin/kuberlr
+RUN cd /chroot/bin && ln -s ./kuberlr ./kubectl
 
 RUN useradd -u 1000 -U -m kuberlr \
     && cp /etc/passwd /chroot/etc/passwd \
@@ -59,7 +61,7 @@ RUN useradd -u 1000 -U -m kuberlr \
     && chown -R 1000:1000 /chroot/home/kuberlr
 
 FROM scratch
-COPY --from=build /chroot /
+COPY --from=zypper /chroot /
 
 USER kuberlr
 
