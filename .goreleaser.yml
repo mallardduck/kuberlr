@@ -23,6 +23,20 @@ builds:
     hooks:
       post:
         - sh -c "cosign sign-blob --yes --output-certificate dist/{{ .ProjectName }}_{{ .Version }}_{{ .Target }}.pem --output-signature dist/{{ .ProjectName }}_{{ .Version }}_{{ .Target }}.sig {{ .Path }}"
+kos:
+  - repository: ghcr.io/mallardduck/kuberlr
+    tags:
+      - "{{.Tag}}"
+      - "{{ if not .Prerelease }}latest{{ end }}"
+    bare: true
+    preserve_import_paths: false
+    sbom: none
+    platforms:
+      - all
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
 release:
   extra_files:
     - glob: dist/*.sig
