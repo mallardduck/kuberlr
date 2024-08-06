@@ -66,5 +66,5 @@ jobs:
             TAG=${{ github.ref_name	}}
           platforms: "linux/amd64,linux/arm64,linux/s390x"
           push: true
-          tags: ${{ vars.IMAGE_REPO || github.repository }}:${{ github.ref_name }}
+          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
